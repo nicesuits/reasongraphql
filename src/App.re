@@ -1,10 +1,35 @@
-let str = ReasonReact.string
-let component = ReasonReact.statelessComponent("App")
+let component = ReasonReact.statelessComponent("App");
 
-let make = _children=>{
-    ...component,
-    render: _self=>
-    <div>
-        <h1>{"ReasonML + ReasonReact + GraphQL" |> str}</h1>
-    </div>
+module VideoGames = [%graphql
+  {|
+query VideoGames {
+    videoGames {
+        id
+        title
+        developer
+        completed
+    }
 }
+|}
+];
+
+module VideoGamesQuery = ReasonApollo.CreateQuery(VideoGames);
+
+let make = _children => {
+  ...component,
+  render: _self => {
+    let videoGamesQuery = VideoGames.make();
+    <div>
+      <h1> {ReasonReact.string("ReasonML + ReasonReact + GraphQL")} </h1>
+      <VideoGamesQuery variables=videoGamesQuery##variables>
+        ...{({result}) =>
+          switch (result) {
+          | Loading => <div> ReasonReact.string "Loading video games!" </div>
+          | Error(error) => <div> ReasonReact.string {error##message} </div>
+          | Data(data) => <VideoGameList items=data##videoGames />
+          }
+        }
+      </VideoGamesQuery>
+    </div>;
+  },
+};
